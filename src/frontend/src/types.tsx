@@ -327,5 +327,14 @@ declare global {
                 reporting_penalty_misbehaviour: number;
             };
         };
+        twttr?: {
+            widgets: {
+                createTweet: (
+                    tweetId: string,
+                    container: HTMLElement,
+                    options?: any,
+                ) => Promise<any>;
+            };
+        };
     }
 }

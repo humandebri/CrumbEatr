@@ -249,7 +249,7 @@ pub const CONFIG: &Config = &Config {
     #[cfg(any(test, feature = "dev"))]
     max_posts_per_day: 150,
     #[cfg(not(any(test, feature = "dev")))]
-    max_posts_per_day: 5,
+    max_posts_per_day: 8,
     max_comments_per_hour: 20,
     excess_penalty: 5,
 
