@@ -490,23 +490,6 @@ header {
     align-items: center;
 }
 
-.tweet-embed {
-    margin-top: 1em;
-    margin-bottom: 1em;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.tweet-error {
-    margin-top: 1em;
-    margin-bottom: 1em;
-    padding: 1em;
-    text-align: center;
-    opacity: 0.7;
-    font-style: italic;
-}
-
 #scroll_up_button {
     display: none;
     color: $dark_background;

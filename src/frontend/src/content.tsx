@@ -4,8 +4,6 @@ import { ArrowDown, RealmSpan, timeAgo } from "./common";
 import remarkGfm from "remark-gfm";
 import { BlogTitle } from "./types";
 import { previewImg } from "./image_preview";
-import { extractTweetId } from "./utils/media";
-import { Tweet } from "./components/Tweet";
 
 export const CUT = "\n\n\n\n";
 
@@ -154,12 +152,6 @@ const linkRenderer =
             if (matches) {
                 const id = matches.pop();
                 return id ? <YouTube id={id} preview={preview} /> : null;
-            }
-
-            // Twitter/X - check both children and props.href
-            const tweetId = extractTweetId(child) || extractTweetId(props.href);
-            if (tweetId) {
-                return <Tweet tweetId={tweetId} />;
             }
 
             matches = isALink(child) || isALink(props.href);
