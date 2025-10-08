@@ -21,6 +21,17 @@
         />
         <meta content="@CrumbEatrNetwork" name="twitter:creator" />
 
+        <!-- Twitter widget configuration -->
+        <meta name="twitter:widgets:autoload" content="off" />
+        <meta name="twitter:dnt" content="on" />
+        <meta name="twitter:widgets:csp" content="on" />
+
+        <!-- Content Security Policy - OpenChat-style permissive approach for Android compatibility -->
+        <meta
+            http-equiv="Content-Security-Policy"
+            content="default-src 'self'; script-src 'self' https://platform.twitter.com/; connect-src 'self' ws: wss: http://localhost:* http://127.0.0.1:* https:; frame-src *; img-src * data: blob:; media-src * blob:; style-src 'self' 'unsafe-inline'; style-src-elem 'self' 'unsafe-inline'; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self';"
+        />
+
         <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
         <link rel="icon" type="image/x-icon" href="./favicon.ico" />
         <link
@@ -74,6 +85,9 @@
                 fill: #edf0ef;
             }
         </style>
+
+        <!-- Twitter widgets library -->
+        <script src="https://platform.twitter.com/widgets.js"></script>
     </head>
     <body>
         <div id="upgrade_banner" class="banner vertically_spaced"></div>
