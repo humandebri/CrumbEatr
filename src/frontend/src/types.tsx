@@ -101,6 +101,7 @@ export type Post = {
     watchers: UserId[];
     children: PostId[];
     reposts: PostId[];
+    critical_engagement_pairs?: [UserId, UserId][];
     user: UserId;
     userObject: { id: UserId; name: string; rewards: number };
     report?: Report;

@@ -962,7 +962,7 @@ export const ReactionPicker = ({
         {window.backendCache.config.reactions.map(([reactId, rewards]) => (
             <button
                 key={reactId}
-                title={`Reward points: ${rewards}`}
+                title={`Reward points: ${reactId === 1 ? 0 : rewards}`}
                 className="medium_text reaction_button unselected centered"
                 onMouseDown={() => react(reactId)}
                 onMouseUp={unreact}

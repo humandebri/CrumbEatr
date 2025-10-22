@@ -320,6 +320,7 @@ pub const CONFIG: &Config = &Config {
     min_positive_reaction_id: 10,
 
     reaction_fee: &[
+        (1, 15), // Thumbs down - critical engagement cost
         (100, 3),
         (101, 3),
         (50, 2),

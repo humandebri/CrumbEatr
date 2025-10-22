@@ -2378,7 +2378,6 @@ impl State {
             .principal_to_user(principal)
             .ok_or("no user for principal found")?;
         let user_id = user.id;
-        let user_credits = user.credits();
         let user_balance = user.total_balance();
         let user_controversial = user.controversial();
         let post = Post::get(self, &post_id).ok_or("post not found")?.clone();
@@ -2401,6 +2400,7 @@ impl State {
         // Users initiate a credit transfer for upvotes, but burn their own credits on
         // downvotes + credits and rewards of the author
         if delta < 0 {
+            // Validation checks
             if user_controversial {
                 return Err(
                     "no downvotes for users with pending reports or negative reward balance".into(),
@@ -2418,24 +2418,26 @@ impl State {
                 return Err("you cannot react on posts of users who blocked you".into());
             }
 
-            let user = self.users.get_mut(&post.user).expect("user not found");
-            user.change_rewards(delta, log.clone());
-            user.downvotes.insert(user_id, time);
+            // Track downvote on author (for filtering purposes)
+            let author = self.users.get_mut(&post.user).expect("user not found");
+            author.downvotes.insert(user_id, time);
+
+            // Charge downvoter only (15 credits, no author penalty)
+            let fee = config::reaction_fee(reaction);
             self.charge_in_realm(
                 user_id,
-                delta.unsigned_abs().min(user_credits),
+                fee,
                 post.realm.as_ref(),
-                log.clone(),
+                format!("critical engagement on post [{0}](#/post/{0})", post_id),
             )?;
-            self.charge_in_realm(
-                post.user,
-                delta
-                    .unsigned_abs()
-                    .min(self.users.get(&post.user).expect("no user found").credits()),
-                post.realm.as_ref(),
-                log,
-            )
-            .expect("couldn't charge user");
+
+            // Mark the POST itself with critical engagement pair
+            // This "infects" the post and all future comments in this thread
+            Post::mutate(self, &post_id, |post| {
+                post.critical_engagement_pairs.insert((user_id, post.user));
+                post.critical_engagement_pairs.insert((post.user, user_id));
+                Ok(())
+            })?;
         } else {
             let mut recipients = vec![post.user];
             if let Some(Extension::Repost(post_id)) = post.extension.as_ref() {
@@ -4244,7 +4246,7 @@ pub(crate) mod tests {
             assert!(state.react(p2, post_id, 100, 0).is_ok());
             let reaction_costs_1 = 12;
             let burned_credits_by_reactions = 2 + 3;
-            let mut rewards_from_reactions = 10 + 20;
+            let rewards_from_reactions = 10 + 20;
 
             // try to self upvote (should be a no-op)
             assert!(state.react(p0, post_id, 100, 0).is_err());
@@ -4260,21 +4262,18 @@ pub(crate) mod tests {
             let lurker = state.users.get(&lurker_id).unwrap();
             assert_eq!(lurker.credits(), c.credits_per_xdr - reaction_costs_1);
 
-            // downvote
+            // downvote (critical engagement mode: downvoter pays 15, author loses nothing)
             assert!(state.react(p3, post_id, 1, 0).is_ok());
-            let reaction_penalty = 3;
-            rewards_from_reactions -= 3;
+            let downvote_cost = 15;
+            // Author no longer loses credits or rewards with critical engagement
             let author = state.users.get(&post_author_id).unwrap();
             let lurker_3 = state.principal_to_user(p3).unwrap();
-            assert_eq!(
-                author.credits(),
-                2 * c.credits_per_xdr - c.post_cost - reaction_penalty
-            );
+            assert_eq!(author.credits(), 2 * c.credits_per_xdr - c.post_cost);
             assert_eq!(author.rewards(), rewards_from_reactions);
-            assert_eq!(lurker_3.credits(), c.credits_per_xdr - 3);
+            assert_eq!(lurker_3.credits(), c.credits_per_xdr - downvote_cost);
             assert_eq!(
                 state.burned_cycles,
-                (c.post_cost + burned_credits_by_reactions + 2 * 3) as i64
+                (c.post_cost + burned_credits_by_reactions + downvote_cost) as i64
             );
 
             Post::create(state, "test".to_string(), &[], p0, 0, Some(0), None, None).unwrap();
@@ -4282,12 +4281,12 @@ pub(crate) mod tests {
             let c = CONFIG;
             assert_eq!(
                 state.burned_cycles,
-                (2 * c.post_cost + burned_credits_by_reactions + 2 * 3) as i64
+                (2 * c.post_cost + burned_credits_by_reactions + downvote_cost) as i64
             );
             let author = state.users.get(&post_author_id).unwrap();
             assert_eq!(
                 author.credits(),
-                2 * c.credits_per_xdr - c.post_cost - c.post_cost - reaction_penalty
+                2 * c.credits_per_xdr - c.post_cost - c.post_cost
             );
 
             let author = state.users.get_mut(&post_author_id).unwrap();

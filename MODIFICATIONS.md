@@ -8,6 +8,31 @@ All modifications listed below have been made under the terms of GPL v3.0, prese
 
 ---
 
+## October 2025: Token Standards and Platform Refinements
+
+### October 21, 2025
+
+- **Critical Engagement UI Polish**: Updated thumbs down reaction tooltip to display "Reward points: 0" instead of "-3" to accurately reflect that downvotes no longer penalize post authors economically (they only affect visibility via post dimming). This provides clearer user communication about the critical engagement system.
+- **Dashboard Log Cleanup**: Removed critical engagement comment logging from dashboard to prevent normal social activity from appearing in system logs. Comments made under critical engagement are now handled silently like regular comments, reducing unnecessary log noise.
+
+## September 2025: ICRC Standards and Content Embedding
+
+### September-October 2025
+
+- **Twitter/X Content Embedding**: Implemented Twitter/X embed feature with Android-compatible Content Security Policy, allowing users to embed tweets in posts while maintaining mobile device compatibility. Initial implementation was temporarily reverted for testing before final re-implementation with proper CSP headers.
+- **Android Authentication Fix**: Added Internet Identity domains to Content Security Policy to resolve authentication issues on Android devices, ensuring cross-platform login compatibility.
+- **ICRC-2 Token Standard**: Implemented complete ICRC-2 approve/transfer_from functionality for token allowances, enabling third-party spending authorization and DEX integration capabilities.
+- **ICRC-21 Consent Messages**: Added ICRC-21 standard for human-readable transaction consent messages, improving user experience for wallet interactions and transaction confirmations.
+- **ICRC-3 Transaction History**: Implemented full ICRC-3 transaction history standard with KongSwap DEX compatibility, including proper transaction format, field naming corrections, method visibility fixes, and standard method aliases. Multiple iterations refined the implementation to ensure full standards compliance and DEX integration.
+- **Daily Post Limit Increase**: Raised daily post limit to reduce posting restrictions and improve user content creation flow.
+- **UI/UX Improvements**: Fixed realm post count display issue, updated black theme to use true black (#000000) backgrounds for better OLED display support, and fixed carousel navigation behavior on thumbnail clicks.
+- **Economic System Adjustment**: Disabled auto-topup feature to restore credit scarcity and strengthen platform economy, removed associated tests and documentation to reflect this architectural change.
+- **Asset Infrastructure**: Updated PWA and social media asset URLs to use icp0.io domain for better CDN distribution and reliability.
+- **Social Media Integration**: Fixed social media card display for invite links to improve sharing experience and user acquisition.
+- **Visual Updates**: Replaced rocket emoji with UFO emoji in reaction system for platform-specific iconography.
+- **Development Tools**: Optimized PocketIC download script to skip download if binary already exists, improving local development setup speed.
+- **Documentation**: Fixed whitepaper formatting issues and removed commented auto-topup sections to maintain documentation clarity.
+
 ## August 2025: UI/UX Refinements and Content Updates
 
 ### August 25-26, 2025

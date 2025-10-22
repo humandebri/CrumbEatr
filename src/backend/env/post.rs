@@ -75,6 +75,9 @@ pub struct Post {
     #[serde(default)]
     heat: u32,
 
+    #[serde(default)]
+    pub critical_engagement_pairs: BTreeSet<(UserId, UserId)>,
+
     #[serde(skip)]
     pub archived: bool,
 }
@@ -130,6 +133,7 @@ impl Post {
             archived: false,
             realm,
             heat,
+            critical_engagement_pairs: Default::default(),
         }
     }
 
@@ -540,6 +544,18 @@ impl Post {
         user.last_activity = timestamp;
         let id = state.new_post_id();
         post.id = id;
+
+        // PROPAGATION: Inherit critical engagement "infection" from parent
+        if let Some(parent_id) = parent {
+            if let Some(parent_post) = Post::get(state, &parent_id) {
+                if !parent_post.critical_engagement_pairs.is_empty() {
+                    // This post inherits the infection
+                    post.critical_engagement_pairs
+                        .clone_from(&parent_post.critical_engagement_pairs);
+                }
+            }
+        }
+
         if let Some(realm) = realm.and_then(|name| state.realms.get_mut(&name)) {
             if parent.is_none() {
                 realm.posts.push(post.id);
@@ -561,11 +577,21 @@ impl Post {
             })?;
             // Reward user for spawning activity with their post.
             if let Some((parent_post_author, parent_post_id)) = result {
-                state.spend_to_user_rewards(
-                    parent_post_author,
-                    CONFIG.response_reward,
-                    format!("response to post [{0}](#/post/{0})", parent_post_id),
-                )
+                // Check if this comment has critical engagement between commenter and parent author
+                let has_critical_engagement = post
+                    .critical_engagement_pairs
+                    .contains(&(user_id, parent_post_author));
+
+                if has_critical_engagement {
+                    // Critical engagement: no reward to parent author
+                } else {
+                    // Normal path: reward the parent post author
+                    state.spend_to_user_rewards(
+                        parent_post_author,
+                        CONFIG.response_reward,
+                        format!("response to post [{0}](#/post/{0})", parent_post_id),
+                    )
+                }
             }
         }
         match post.extension.as_ref() {
@@ -953,7 +979,7 @@ mod tests {
             archive_cold_posts(state, 5).unwrap();
             assert_eq!(
                 state.memory.health("B"),
-                "boundary=894B, mem_size=894B, segments=0".to_string()
+                "boundary=1034B, mem_size=1034B, segments=0".to_string()
             );
 
             // Make sure we have the right numbers in cold and hot memories
@@ -997,7 +1023,7 @@ mod tests {
             assert_eq!(state.memory.posts.len(), 3);
             assert_eq!(
                 state.memory.health("B"),
-                "boundary=894B, mem_size=894B, segments=2".to_string()
+                "boundary=1034B, mem_size=1034B, segments=2".to_string()
             );
 
             // Archive posts again
@@ -1008,7 +1034,7 @@ mod tests {
             // old posts
             assert_eq!(
                 state.memory.health("B"),
-                "boundary=1250B, mem_size=1250B, segments=1".to_string()
+                "boundary=1446B, mem_size=1446B, segments=1".to_string()
             );
         });
     }
