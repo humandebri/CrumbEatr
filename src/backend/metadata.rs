@@ -34,29 +34,74 @@ pub fn set_metadata(
 ) -> Vec<u8> {
     let desc = truncate(desc, 160).replace('\n', " ");
 
+    let base_url = if path.is_empty() {
+        format!("https://{}/", host)
+    } else {
+        format!("https://{}/{}", host, path)
+    };
+
     let metadata = format!(
-        r#"<meta content="https://{0}/#/{1}" property="og:url" />
-            <link href="https://{0}/#/{1}" rel="canonical" />
-            <title>{2}</title>
-            <meta content="{3}" name="description" />
-            <meta content="{2}" property="og:title" />
-            <meta content="{3}" property="og:description" />
-            <meta content="https://{0}/_/raw/social-image.jpg" property="og:image" />
+        r#"<meta content="{0}" property="og:url" />
+            <link href="{0}" rel="canonical" />
+            <title>{1}</title>
+            <meta content="{2}" name="description" />
+            <meta content="{1}" property="og:title" />
+            <meta content="{2}" property="og:description" />
+            <meta content="https://{3}/_/raw/social-image.jpg" property="og:image" />
             <meta content="image/jpeg" property="og:image:type" />
             <meta content="1200" property="og:image:width" />
             <meta content="630" property="og:image:height" />
-            <meta content="{2}" property="twitter:title" />
-            <meta content="{3}" property="twitter:description" />
+            <meta content="{1}" property="twitter:title" />
+            <meta content="{2}" property="twitter:description" />
             <meta content="summary_large_image" property="twitter:card" />
-            <meta content="https://{0}/_/raw/social-image.jpg" property="twitter:image" />
+            <meta content="https://{3}/_/raw/social-image.jpg" property="twitter:image" />
             <meta content="{4}" property="og:type" />"#,
-        host, path, title, desc, page_type
+        base_url, title, desc, host, page_type
     )
     .replace('\n', "");
 
-    String::from_utf8_lossy(body)
-        // We have to remove the space before the last "/" so that the test passes on the minimized version.
-        .replace(r#"<meta name="mark" content="OG"/>"#, &metadata)
+    let html = String::from_utf8_lossy(body);
+    // Assets built locally may contain either `<meta .../>` or `<meta ... />`
+    // depending on the minifier, so replace both variants.
+    html.replace(r#"<meta name="mark" content="OG"/>"#, &metadata)
+        .replace(r#"<meta name="mark" content="OG" />"#, &metadata)
         .as_bytes()
         .to_vec()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn set_metadata_uses_clean_canonical_urls() {
+        let body = br#"<html><head><meta name="mark" content="OG"/></head></html>"#;
+        let result = set_metadata(body, "example.com", "post/42", "Title", "Desc", "article");
+        let output = String::from_utf8(result).expect("valid utf8");
+        assert!(output.contains(
+            r#"<meta content="https://example.com/post/42" property="og:url" />"#
+        ));
+        assert!(output.contains(
+            r#"<link href="https://example.com/post/42" rel="canonical" />"#
+        ));
+        assert!(
+            !output.contains("#/"),
+            "metadata should not emit hash-based canonical URLs"
+        );
+    }
+
+    #[test]
+    fn set_metadata_replaces_placeholder_with_space_variant() {
+        let body = br#"<html><head><meta name="mark" content="OG" /></head></html>"#;
+        let result = set_metadata(body, "example.com", "", "Home", "Desc", "website");
+        let output = String::from_utf8(result).expect("valid utf8");
+        assert!(
+            output.contains(r#"<meta content="https://example.com/" property="og:url" />"#),
+            "placeholder with space before slash should also be replaced"
+        );
+        assert!(
+            !output.contains(r#"<meta name="mark" content="OG" />"#),
+            "original placeholder should be removed"
+        );
+    }
 }
