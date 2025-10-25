@@ -186,6 +186,7 @@ fn route(path: &str) -> Option<(Headers, ByteBuf)> {
                 if let Some(post) =
                     Post::get(state, &id.parse::<u64>().expect("couldn't parse post id"))
                 {
+                    let author = state.users.get(&post.user)?.name.clone();
                     return index(
                         domain,
                         &format!(
@@ -196,15 +197,10 @@ fn route(path: &str) -> Option<(Headers, ByteBuf)> {
                             },
                             post.id
                         ),
-                        &format!(
-                            "{} #{} by @{}",
-                            match post.parent {
-                                None => "Post",
-                                _ => "Reply",
-                            },
-                            post.id,
-                            state.users.get(&post.user)?.name
-                        ),
+                        &match post.parent {
+                            None => format!("@{}", author),
+                            Some(_) => format!("@{} replied", author),
+                        },
                         &filter(&post.body),
                         "article",
                     );
